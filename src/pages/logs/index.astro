@@ -1,6 +1,5 @@
 ---
 import Layout from '../../layouts/Layout.astro';
-import TimerCard from '../components/TimerCard.astro'
 
 import { PrismaClient } from '@prisma/client'
 const prisma = new PrismaClient()
@@ -29,11 +28,11 @@ let count = 0
     <div class="p-6">
         {logs ? logs.map((l) => (
             count < 20 ? l.action == 1 ? <div class="bg-green-500 rounded-full p-2 my-2">
-                <h1 class="text-xl text-white text-center" updater={count += 1}>{l.username} started timer.</h1>
+                <h1 class="text-xl text-white text-center" data-updater={count += 1}>{l.username} started timer.</h1>
             </div> : l.action == 2 ? <div class="bg-red-500 rounded-full p-2 my-2">
-                <h1 class="text-xl text-white text-center" updater={count += 1}>{l.username} stopped timer.</h1>
+                <h1 class="text-xl text-white text-center" data-updater={count += 1}>{l.username} stopped timer.</h1>
             </div> : l.action == 3 ? <div class="bg-blue-500 rounded-full p-2 my-2">
-                <h1 class="text-xl text-white text-center" updater={count += 1}>{l.username} reset timer.</h1>
+                <h1 class="text-xl text-white text-center" data-updater={count += 1}>{l.username} reset timer.</h1>
             </div> : "Action not defined" : ""
         )) : ""}
     </div>
