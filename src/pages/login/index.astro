@@ -1,0 +1,59 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { PrismaClient } from '@prisma/client'
+import {compare} from 'bcrypt'
+
+const prisma = new PrismaClient()
+
+if (Astro.request.method == 'POST') {
+    const body = await Astro.request.formData()
+    const username = body.get('username')
+    const password = body.get('password')
+    console.log(username)
+
+    const admin = await prisma.admin.findFirst({
+        where: {
+            username: username as string,
+        },
+    })
+
+    if (admin) {
+        const c = await compare(password as string, admin.password)
+
+        if (c) {
+            Astro.cookies.set("AdminUser", {username: username}, { path: "/" })
+
+            return Astro.redirect("/")
+        }
+    }
+    prisma.$disconnect()
+}
+
+function create(username) {
+    Astro.cookies.set("AdminUser", {username: username}, { path: "/" })
+
+    return Astro.redirect("/")
+}
+---
+
+<Layout title="WorkerTimer Login">
+    <div class="flex h-screen justify-center items-center">
+        <form method="POST" class="">
+            <div class="p-4">
+                <div class="my-2">
+                    <label for="UsernameField" class="">Username: </label>
+                    <input type="text" id="UsernameField" name="username" class="w-full bg-gray-200 rounded-md"/>
+                </div>
+
+                <div class="my-2">
+                    <label for="PasswordField" class="">Password: </label>
+                    <input type="text" id="PasswordField" name="password" class="w-full bg-gray-200 rounded-md"/>
+                </div>
+            </div>
+
+            <div class="flex justify-center">
+                <input type="submit" value="Enviar" class="bg-blue-500 p-2 text-white rounded-full px-4 hover:cursor-pointer" />
+            </div>
+        </form>
+    </div>
+</Layout>

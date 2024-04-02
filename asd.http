@@ -1,0 +1,6 @@
+POST http://localhost:4321/api/admin/create/
+Content-Type: application/json
+
+{}
+
+###

@@ -1,0 +1,33 @@
+---
+import Layout from '../layouts/Layout.astro';
+import TimerCard from '../components/TimerCard.astro'
+
+import { PrismaClient } from '@prisma/client'
+const prisma = new PrismaClient()
+
+const AdminUser = Astro.cookies.get("AdminUser")
+
+if (AdminUser) {
+} else {
+    return Astro.redirect("/login")
+}
+
+const users = await prisma.user.findMany()
+---
+
+<Layout title="Worker Timer">
+    <div class="h-screen">
+        <div class="grid sm:grid-cols-2 md:grid-cols-3 justify-center p-6">
+            {users ? users.map((u) => (<TimerCard name={u.name} id={u.id} seconds={u.seconds} email={u.email}></TimerCard>)) : ""}
+        </div>
+    </div>
+
+    <section class="h-20 flex justify-center items-center">
+        <a href="/resets" class="w-full p-2 bg-red-500 text-xl text-center text-white font-bold">RESETS</a>
+    </section>
+
+</Layout>
+
+<style>
+
+</style>

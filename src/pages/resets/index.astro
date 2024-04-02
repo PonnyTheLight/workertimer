@@ -1,0 +1,91 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import TimerCard from '../components/TimerCard.astro'
+
+import { PrismaClient } from '@prisma/client'
+const prisma = new PrismaClient()
+
+const AdminUser = Astro.cookies.get("AdminUser")
+
+if (AdminUser) {
+    console.log(AdminUser)
+} else {
+    return Astro.redirect("/login")
+}
+
+const users = await prisma.user.findMany()
+console.log(users)
+---
+
+<Layout title="Worker Timer">
+    <div class="p-6 flex justify-center items-center">
+        <div class="w-full p-4">
+            <p id="SuccessP" class="text-white bg-green-500 rounded-full p-3 text-center" hidden><span class="" id="SuccessSpan"></span></p>
+
+            {users ? users.map((i) => (
+                    <div class="my-2 p-6 items-center bg-gray-200 rounded-full" style="justify-content: space-evenly">
+                        <div class="grid grid-cols-2 items-center">
+                            <div class="">
+                                <h1 class="text-2xl">{i.name}</h1>
+                            </div>
+
+                            <worker-timer data-id={i.id} data-email={i.email} data-username={i.name}>
+                                <div class="">
+                                    <button class="p-2 px-4 bg-red-500 rounded-md text-white hover:cursor-pointer" id={`ResetBtn-${i.id}`}>Reset</button>
+                                </div>
+                            </worker-timer>
+                        </div>
+                    </div>
+            )) : ""}
+        </div>
+    </div>
+
+    <section class="h-20 flex justify-center items-center">
+        <a href="/" class="w-full p-2 bg-green-500 text-xl text-center text-white font-bold">VOLVER</a>
+    </section>
+</Layout>
+
+<script>
+    class WorkerTimer extends HTMLElement {
+        constructor() {
+            super();
+
+            const id = this.dataset.id
+            const email = this.dataset.email
+            const username = this.dataset.username
+
+            const success = document.getElementById("SuccessSpan")
+            const successP = document.getElementById("SuccessP")
+
+            const r_btn = document.getElementById(`ResetBtn-${id}`)
+
+            r_btn.addEventListener('click', async () => {
+                const con = confirm("¿Are you sure you want reset the counter of " + email + "?")
+
+                if (con) {
+                    const response = await fetch("/api/timer/restart/", {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            "email": email,
+                            "username": username,
+                        })
+                    })
+                    const res = await response.json()
+
+                    success.textContent = `${username} counter reset successful`
+                    successP.toggleAttribute('hidden')
+                }
+            })
+        }
+    }
+
+    customElements.define('worker-timer', WorkerTimer);
+</script>
+
+<style>
+
+</style>

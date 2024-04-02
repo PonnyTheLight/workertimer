@@ -1,0 +1,249 @@
+---
+interface Props {
+    name: string;
+    seconds: int;
+    id: int;
+}
+
+const { name, id, email } = Astro.props;
+let {seconds} = Astro.props;
+
+---
+
+<div class="p-4 text-center bg-gray-200 rounded-md mx-2 my-2">
+    <worker-timer data-id={id} data-email={email} data-username={name}>
+    <h1 class="text-4xl">{name}</h1>
+    <p class="text-2xl mt-2"><span class="text-blue-600" id=`CounterPrincipal-${id}`>0d 0h 0m</span><span class="mx-1 text-red-600 text-sm" id=`CounterSeconds-${id}`>0</span><p>
+
+    <div class="mt-4">
+            <!-- <button class="text-xl bg-red-500 p-2 text-white rounded-lg px-4" id={`ResetBtn-${id}`}>Reset</button> -->
+            <button class="text-xl bg-green-500 p-2 text-white rounded-lg px-4" id={`StartBtn-${id}`}>Start</button>
+            <button class="text-xl bg-red-500 p-2 text-white rounded-lg px-4" id={`StopBtn-${id}`} hidden>Stop</button>
+    </div>
+    </worker-timer>
+</div>
+
+<script>
+
+    class WorkerTimer extends HTMLElement {
+        constructor() {
+            super();
+
+            let interval;
+            let interval_updater;
+            let sec;
+
+            const custom_add = 1;
+            const timeout = 1000;
+            const auto_updater_timeout = 5000;
+
+            const id = this.dataset.id
+            const email = this.dataset.email
+            const username = this.dataset.username
+            //const r_btn = document.getElementById(`ResetBtn-${id}`)
+            const s_btn = document.getElementById(`StartBtn-${id}`)
+            const st_btn = document.getElementById(`StopBtn-${id}`)
+
+            const counter_P = document.getElementById(`CounterPrincipal-${id}`);
+            const counter_S = document.getElementById(`CounterSeconds-${id}`);
+
+            (async () => {
+                const response = await fetch("/api/timer/checker/", {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        "email": email,
+                    })
+                })
+                const res = await response.json()
+
+                if (res.started) {
+                    s_btn.toggleAttribute('hidden')
+                    st_btn.toggleAttribute('hidden')
+
+                    interval = setInterval(async () => {
+                        sec += custom_add
+
+                        const response = await fetch("/api/timer/update/", {
+                            method: 'POST',
+                            headers: {
+                                'Accept': 'application/json',
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                "email": email,
+                                "seconds": sec
+                            })
+                        })
+
+                        print_sec(sec)
+                    }, auto_updater_timeout)
+                }
+                await update_data()
+                /* let auto_updater = setInterval(async () => {
+                    await check_data()
+                    }, auto_updater_timeout + 1000, []) */
+
+                return true
+            })();
+
+            /* r_btn.addEventListener('click', async () => {
+                const con = confirm("¿Are you sure you want reset the counter of " + email + "?")
+
+                if (con) {
+                    const response = await fetch("/api/timer/restart/", {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json'
+                            },
+                        body: JSON.stringify({
+                            "email": email,
+                            "username": username,
+                            })
+                        })
+                    const res = await response.json()
+
+                    sec = res.seconds
+                    print_sec(sec)
+                    }
+            }) */
+
+            s_btn.addEventListener('click', async () => {
+
+                s_btn.toggleAttribute('hidden')
+                st_btn.toggleAttribute('hidden')
+                const response = await fetch("/api/timer/start/", {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                        },
+                    body: JSON.stringify({
+                        "email": email,
+                        "username": username,
+                        })
+                    })
+                const res = await response.json()
+
+                sec = res.seconds
+
+                interval = setInterval(async () => {
+                    sec += custom_add
+
+                    const response = await fetch("/api/timer/update/", {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            "email": email,
+                            "seconds": sec
+                        })
+                    })
+
+                    print_sec(sec)
+                    }, timeout)
+
+                /* interval_updater = setInterval(async () => {
+                    const response = await fetch("/api/timer/update/", {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            "email": email,
+                            "seconds": sec,
+                        })
+                    })
+                }, auto_updater_timeout) */
+                })
+
+            st_btn.addEventListener('click', async () => {
+
+                s_btn.toggleAttribute('hidden')
+                st_btn.toggleAttribute('hidden')
+
+                clearInterval(interval)
+                const response = await fetch("/api/timer/stop/", {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                        },
+                    body: JSON.stringify({
+                        "email": email,
+                        "seconds": sec,
+                        "username": username,
+                        })
+                    })
+                const res = await response.json()
+
+                sec = res.seconds
+                print_sec(sec)
+                })
+
+            function print_sec(sec) {
+                const count = secondsToDhms(sec)
+                counter_P.textContent = (count.days ? count.days + "d " : "") + (count.hours ? count.hours + "h " : "") + count.minutes + "m"
+                counter_S.textContent = String(count.seconds)
+                }
+
+                async function update_data() {
+                    const response = await fetch("/api/timer/", {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json'
+                            },
+                        body: JSON.stringify({
+                            "email": email,
+                            })
+                        })
+                    const res = await response.json()
+                    sec = res.seconds
+                    print_sec(sec)
+
+                    }
+
+                    async function check_data() {
+                        const response = await fetch("/api/timer/", {
+                            method: 'POST',
+                            headers: {
+                                'Accept': 'application/json',
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                "email": email,
+                            })
+                        })
+                        const res = await response.json()
+
+                        if (sec != res.seconds) {
+                            await update_data()
+                        }
+                    }
+        }
+    }
+
+    customElements.define('worker-timer', WorkerTimer);
+
+    function secondsToDhms(seconds) {
+        seconds = Number(seconds);
+        const d = Math.floor(seconds / (3600 * 24));
+        const h = Math.floor(seconds % (3600 * 24) / 3600);
+        const m = Math.floor(seconds % 3600 / 60);
+        const s = Math.floor(seconds % 60);
+
+        let dDisplay = d > 0 ? d + "d" : "";
+        let hDisplay = h > 0 ? h + "h" : "";
+        let mDisplay = m > 0 ? m + "m" : "";
+        let sDisplay = s > 0 ? s + "" : "";
+        return {days: d, hours: h, minutes: m, seconds: s};
+    }
+</script>
